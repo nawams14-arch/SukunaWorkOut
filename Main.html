@@ -1,0 +1,503 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Shrine Training Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Shippori+Mincho+B1:wght@600;800&display=swap">
+<style>
+/* Layout: one narrow column app. Header with shrine ring, week strip, day sheet of exercise cards, bottom tabs and a rest-timer bar. */
+:root {
+  --bg: #0a0708;
+  --surface: #140d0f;
+  --surface-2: #1e1316;
+  --line: #3a1b21;
+  --red: #d4162c;
+  --red-deep: #8c0f1e;
+  --bone: #efe6dc;
+  --muted: #ad9c9c;
+  --pink: #ff8fa3;
+  --font-display: "Shippori Mincho B1", "Noto Sans Thai", serif;
+  --font-body: "Noto Sans Thai", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--bone);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 0 96px;
+  background-image:
+    radial-gradient(60rem 28rem at 50% -8rem, rgba(212,22,44,.22), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(212,22,44,.035) 46px 47px);
+  background-attachment: fixed;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+.wrap { max-width: 680px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; padding-block: 20px 0; }
+
+/* header */
+.head { display: flex; align-items: center; gap: 16px; position: relative; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.head::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 88px; height: 3px; background: var(--red); }
+.kanji { font-family: var(--font-display); font-weight: 800; font-size: 13px; letter-spacing: .5em; color: var(--red); margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.15; margin: 2px 0 4px; letter-spacing: .01em; text-wrap: balance; }
+.head p { margin: 0; color: var(--muted); font-size: 13px; }
+.head > div:first-child { min-width: 0; flex: 1; }
+.ring { width: 76px; height: 76px; flex: none; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .pct { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 17px; }
+
+/* week strip */
+.weekbar { display: flex; align-items: center; gap: 8px; }
+.nav { width: 36px; height: 44px; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; color: var(--muted); }
+.nav:hover { color: var(--bone); border-color: var(--red); }
+.days { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 6px 0 7px; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; }
+.day small { font-size: 11px; color: var(--muted); }
+.day b { font-family: var(--font-mono); font-size: 15px; }
+.day i { width: 18px; height: 3px; background: var(--line); margin-top: 3px; }
+.day.today small { color: var(--pink); }
+.day.sel { background: var(--red-deep); border-color: var(--red); }
+.day.sel small { color: var(--bone); }
+.day.full i { background: var(--red); }
+.day.sel.full i { background: var(--bone); }
+.day.part i { background: linear-gradient(90deg, var(--red) var(--p), var(--line) var(--p)); }
+.weeksum { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: -6px; }
+.weeksum b { color: var(--bone); font-family: var(--font-mono); }
+
+/* day heading */
+.dayhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.dayhead h2 { font-family: var(--font-display); font-size: 22px; margin: 0; font-weight: 800; text-wrap: balance; }
+.dayhead p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { background: var(--surface); border: 1px solid var(--line); padding: 7px 12px; border-radius: 2px; font-size: 13px; font-weight: 500; }
+.btn:hover { border-color: var(--red); }
+.btn.on { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.danger { border-color: var(--red-deep); color: var(--pink); }
+
+.banner { border: 1px solid var(--red); background: linear-gradient(90deg, rgba(212,22,44,.3), transparent); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+.banner .k { font-family: var(--font-display); font-weight: 800; color: var(--red); font-size: 20px; letter-spacing: .2em; }
+.banner p { margin: 0; font-size: 13.5px; }
+.warm { background: var(--surface); border-left: 3px solid var(--red-deep); padding: 10px 14px; font-size: 13.5px; color: var(--muted); }
+.warm b { color: var(--bone); }
+
+/* exercise */
+.list { display: flex; flex-direction: column; gap: 12px; }
+.ex { background: var(--surface); border: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.ex.done { border-color: var(--red); background: linear-gradient(180deg, rgba(212,22,44,.12), var(--surface)); }
+.ex-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.ex-top > div { min-width: 0; }
+.ex h3 { font-size: 17px; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.target { font-family: var(--font-mono); font-size: 13px; color: var(--pink); white-space: nowrap; text-align: right; }
+.target small { display: block; font-family: var(--font-body); color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.note { margin: 0; color: var(--muted); font-size: 13px; }
+.sets { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.set { display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); padding: 5px; }
+.set.on { border-color: var(--red); }
+.chk { width: 34px; height: 34px; flex: none; border: 1.5px solid var(--red-deep); background: transparent; display: grid; place-items: center; border-radius: 2px; color: transparent; font-weight: 700; }
+.set.on .chk { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 0 14px rgba(212,22,44,.55); }
+.rep { width: 100%; min-width: 0; background: transparent; border: 0; border-bottom: 1px dashed var(--line); font-family: var(--font-mono); font-size: 15px; padding: 4px 0; text-align: center; border-radius: 0; }
+.rep::placeholder { color: #6b5a5c; }
+.exfoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.exfoot .bar { height: 3px; flex: 1; background: var(--line); }
+.exfoot .bar span { display: block; height: 100%; background: var(--red); }
+
+/* edit form */
+.edit { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.edit label { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--muted); min-width: 0; }
+.edit label.wide { grid-column: 1 / -1; }
+.edit input { background: var(--bg); border: 1px solid var(--line); padding: 8px 10px; border-radius: 2px; color: var(--bone); width: 100%; min-width: 0; font-size: 14px; }
+.stepper { display: flex; }
+.stepper button { width: 40px; background: var(--surface-2); border: 1px solid var(--line); font-size: 18px; }
+.stepper input { text-align: center; font-family: var(--font-mono); border-inline: 0; }
+
+/* feel + notes */
+.card { background: var(--surface); border: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.card h4 { margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 800; }
+.feel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.feel button { background: var(--surface-2); border: 1px solid var(--line); padding: 8px 2px; font-size: 12px; border-radius: 2px; }
+.feel button.on { background: var(--red); border-color: var(--red); color: #fff; }
+textarea { width: 100%; min-height: 70px; background: var(--bg); border: 1px solid var(--line); padding: 8px 10px; border-radius: 2px; resize: vertical; }
+
+/* rest day / guide */
+.rest { text-align: center; padding: 28px 16px; }
+.rest .k { font-family: var(--font-display); font-size: 42px; font-weight: 800; color: var(--red); letter-spacing: .3em; margin: 0; }
+.guide ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.guide li::marker { color: var(--red); }
+
+/* history */
+.hist { display: flex; flex-direction: column; gap: 8px; }
+.hrow { display: grid; grid-template-columns: 84px 1fr auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); padding: 10px 12px; text-align: left; width: 100%; }
+.hrow:hover { border-color: var(--red); }
+.hrow .d { font-family: var(--font-mono); font-size: 13px; }
+.hrow .t { min-width: 0; font-size: 13px; color: var(--muted); }
+.hrow .t b { color: var(--bone); font-weight: 600; display: block; }
+.hrow .p { font-family: var(--font-mono); font-weight: 700; color: var(--pink); }
+.empty { color: var(--muted); text-align: center; padding: 28px 8px; border: 1px dashed var(--line); }
+
+/* bottom */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(10,7,8,.96); border-top: 1px solid var(--line); display: flex; justify-content: center; padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; z-index: 5; }
+.tabs button { flex: 1; max-width: 220px; background: transparent; border: 0; border-top: 2px solid transparent; padding: 8px 4px; color: var(--muted); font-weight: 500; }
+.tabs button.on { color: var(--bone); border-top-color: var(--red); }
+.timer { position: fixed; left: 16px; right: 16px; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); max-width: 648px; margin-inline: auto; background: var(--red); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; z-index: 6; box-shadow: 0 0 28px rgba(212,22,44,.5); }
+.timer b { font-family: var(--font-mono); font-size: 22px; }
+.timer button { background: rgba(0,0,0,.35); border: 0; padding: 6px 12px; border-radius: 2px; color: #fff; }
+.sync { font-size: 11.5px; color: var(--muted); text-align: center; }
+@media (max-width: 420px) {
+  h1 { font-size: 24px; }
+  .ring { width: 64px; height: 64px; }
+  .hrow { grid-template-columns: 70px 1fr auto; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .set .chk, .ex { transition: background .15s, border-color .15s, box-shadow .15s; }
+}
+</style>
+
+<div class="wrap" id="app"></div>
+<div class="timer" id="timer" hidden>
+  <span>พัก <b id="tval">0:00</b></span>
+  <button id="tskip" type="button">ข้าม</button>
+</div>
+<nav class="tabs" id="tabs" aria-label="เมนู">
+  <button type="button" data-tab="train" class="on">ฝึก</button>
+  <button type="button" data-tab="history">ประวัติ</button>
+  <button type="button" data-tab="guide">คู่มือ</button>
+</nav>
+
+<script>
+(function () {
+  var DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  var DAY_TH = { mon: "จันทร์", tue: "อังคาร", wed: "พุธ", thu: "พฤหัสบดี", fri: "ศุกร์", sat: "เสาร์", sun: "อาทิตย์" };
+  var DAY_SHORT = { mon: "จ.", tue: "อ.", wed: "พ.", thu: "พฤ.", fri: "ศ.", sat: "ส.", sun: "อา." };
+  var FEEL = ["ง่าย", "สบาย", "พอดี", "หนัก", "สุดแรง"];
+
+  function ex(name, sets, reps, rest, note) {
+    return { id: "e" + Math.random().toString(36).slice(2, 9), name: name, sets: sets, reps: reps, rest: rest, note: note };
+  }
+  function defaultPlan() {
+    return {
+      mon: { title: "Pull + Biceps", sub: "เน้นหลัง ปีกหลัง แขนหน้า และแรงดึง", ex: [
+        ex("Strict Pull-up", 4, "5–8", "2–3 นาที", "ดึงโดยไม่เหวี่ยงตัว ลดตัวลงอย่างควบคุม"),
+        ex("Chin-up", 2, "6–10", "2 นาที", "เน้นการควบคุมและไม่ฝืนจนหมดแรง"),
+        ex("One-arm Dumbbell Row", 3, "10–15/ข้าง", "90 วินาที", "หลังตรง ดึงศอกไปด้านหลัง"),
+        ex("Dumbbell Reverse Fly", 2, "12–15", "60–90 วินาที", "ใช้น้ำหนักที่ควบคุมได้"),
+        ex("Dumbbell Biceps Curl", 3, "8–15", "60–90 วินาที", "ไม่โยกตัวช่วยยก"),
+        ex("Hammer Curl", 2, "10–15", "60–90 วินาที", "ข้อมืออยู่ในแนวเป็นกลาง")
+      ] },
+      tue: { title: "Push + Shoulders", sub: "เน้นอก ไหล่ และหลังแขน", ex: [
+        ex("Push-up", 3, "10–20", "90 วินาที", "ลำตัวเป็นแนวตรง"),
+        ex("Dumbbell Floor Press", 3, "8–15", "2 นาที", "ลดดัมเบลอย่างควบคุม"),
+        ex("Pike Push-up", 3, "6–10", "2 นาที", "ใช้เวอร์ชันง่ายขึ้นหากยังคุมท่าไม่ได้"),
+        ex("Dumbbell Shoulder Press", 2, "8–12", "90 วินาที", "ไม่แอ่นหลังมากเกินไป"),
+        ex("Lateral Raise", 3, "10–15", "60–90 วินาที", "ลดน้ำหนักหรือปรับท่าหากต้องเหวี่ยงตัว"),
+        ex("Overhead Triceps Extension", 2, "10–15", "60–90 วินาที", "จับดัมเบลให้มั่นคง")
+      ] },
+      wed: { title: "Legs + Core", sub: "เน้นขา สะโพก หน้าท้อง และความมั่นคง", ex: [
+        ex("Bulgarian Split Squat", 3, "8–12/ข้าง", "2 นาที", "เริ่มแบบไม่ถือดัมเบลหากยังเสียสมดุล"),
+        ex("Dumbbell Romanian Deadlift", 3, "10–15", "2 นาที", "พับสะโพก หลังเป็นแนวตรง"),
+        ex("Reverse Lunge", 2, "8–12/ข้าง", "90 วินาที", "ก้าวถอยอย่างควบคุม"),
+        ex("Single-leg Calf Raise", 3, "12–20/ข้าง", "60 วินาที", "จับที่ยึดมั่นคงเพื่อทรงตัว"),
+        ex("Hanging Knee Raise", 3, "8–12", "90 วินาที", "เริ่มจากงอเข่า ไม่เหวี่ยงตัว"),
+        ex("Side Plank", 2, "30–45 วินาที/ข้าง", "60 วินาที", "รักษาลำตัวให้อยู่แนวตรง")
+      ] },
+      thu: { title: "Calisthenics Skills", sub: "เน้นทักษะและการควบคุม ไม่ฝึกจนหมดแรง", ex: [
+        ex("Scapular Pull-up", 3, "8–10", "60–120 วินาที", "ขยับสะบักโดยไม่งอศอกมาก"),
+        ex("Hollow Body Hold", 3, "20–30 วินาที", "60–90 วินาที", "เกร็งหน้าท้องและหลังส่วนล่างอย่างควบคุม"),
+        ex("Wall Handstand Progression", 3, "10–20 วินาที", "90–120 วินาที", "ทำบนพื้นที่ปลอดภัย ผนังมั่นคง และไม่ฝืนข้อมือ"),
+        ex("Dead Hang", 2, "20–40 วินาที", "60–90 วินาที", "หยุดก่อนมือหมดแรงหรือไหล่เจ็บ")
+      ] },
+      fri: { title: "Full Body Hypertrophy", sub: "เน้นกล้ามเนื้อทั้งตัวและปริมาณการฝึกอย่างพอดี", ex: [
+        ex("Pull-up", 3, "5–8", "2 นาที", "คุมฟอร์มและเหลือแรงไว้"),
+        ex("Push-up", 3, "10–20", "90 วินาที", "ลำตัวตรง"),
+        ex("Goblet Squat", 3, "12–15", "90–120 วินาที", "ใช้ช่วงการเคลื่อนไหวที่ไม่เจ็บ"),
+        ex("Dumbbell Romanian Deadlift", 3, "10–15", "2 นาที", "หลังตรง พับสะโพก"),
+        ex("Dumbbell Floor Press", 2, "10–15", "90 วินาที", "ไม่กระแทกข้อศอกกับพื้น"),
+        ex("Dumbbell Curl", 2, "10–15", "60–90 วินาที", "ไม่โยกตัว"),
+        ex("Reverse Crunch", 2, "12–15", "60 วินาที", "ยกเชิงกรานด้วยหน้าท้อง")
+      ] },
+      sat: { title: "พักฟื้น", sub: "ให้กล้ามเนื้อได้ซ่อมแซม", ex: [] },
+      sun: { title: "พักฟื้น", sub: "ให้กล้ามเนื้อได้ซ่อมแซม", ex: [] }
+    };
+  }
+
+  /* ---------- state ---------- */
+  var state = { plan: defaultPlan(), logs: {}, updatedAt: 0 };
+  var KEY = "shrine-training-v1";
+  var ui = { tab: "train", date: iso(new Date()), edit: false, confirmReset: false };
+  var timer = { end: 0, id: null };
+  var dbDoc = null;
+
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) { var s = JSON.parse(raw); if (s && s.plan && s.logs) state = s; }
+  } catch (e) {}
+
+  function iso(d) {
+    var m = d.getMonth() + 1, dd = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (dd < 10 ? "0" : "") + dd;
+  }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return iso(d); }
+  function dayKey(s) { return DAYS[(parse(s).getDay() + 6) % 7]; }
+  function weekDates(s) { var mon = addDays(s, -((parse(s).getDay() + 6) % 7)); return DAYS.map(function (_, i) { return addDays(mon, i); }); }
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function fmtDate(s) { var d = parse(s); return d.getDate() + "/" + (d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2); }
+
+  var saveTimer = null;
+  function save() {
+    state.updatedAt = Date.now();
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      if (dbDoc) { try { dbDoc.set({ data: JSON.stringify(state), updatedAt: state.updatedAt }).catch(function () {}); } catch (e) {} }
+    }, 600);
+  }
+
+  /* ---------- log helpers ---------- */
+  function dayLog(date) { if (!state.logs[date]) state.logs[date] = { ex: {}, feel: 0, note: "" }; return state.logs[date]; }
+  function getSet(date, id, i) {
+    var l = state.logs[date]; var a = l && l.ex[id];
+    return (a && a[i]) || { d: false, r: "" };
+  }
+  function setSet(date, id, i, patch) {
+    var l = dayLog(date); var a = l.ex[id] || (l.ex[id] = []);
+    while (a.length <= i) a.push({ d: false, r: "" });
+    for (var k in patch) a[i][k] = patch[k];
+  }
+  function lastReps(date, id, i) {
+    var ds = Object.keys(state.logs).filter(function (d) { return d < date; }).sort().reverse();
+    for (var k = 0; k < ds.length; k++) {
+      var a = state.logs[ds[k]].ex[id];
+      if (a && a[i] && a[i].r) return a[i].r;
+    }
+    return "";
+  }
+  function exDone(date, e) { var n = 0; for (var i = 0; i < e.sets; i++) if (getSet(date, e.id, i).d) n++; return n; }
+  function dayStats(date) {
+    var p = state.plan[dayKey(date)]; var tot = 0, done = 0;
+    p.ex.forEach(function (e) { tot += e.sets; done += exDone(date, e); });
+    return { tot: tot, done: done, pct: tot ? Math.round(done / tot * 100) : 0 };
+  }
+  function restSeconds(s) {
+    var m = String(s).match(/\d+/); if (!m) return 60;
+    return +m[0] * (/นาที|min/i.test(s) ? 60 : 1);
+  }
+
+  /* ---------- render ---------- */
+  var app = document.getElementById("app");
+
+  function ringSvg(pct) {
+    var r = 32, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+    return '<svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="' + r + '" fill="none" stroke="#3a1b21" stroke-width="6"/>' +
+      '<circle cx="38" cy="38" r="' + r + '" fill="none" stroke="#d4162c" stroke-width="6" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg>';
+  }
+
+  function header(pct, line) {
+    return '<header class="head"><div><p class="kanji">宿 儺</p><h1>Shrine Training Log</h1><p>' + esc(line) + '</p></div>' +
+      '<div class="ring" role="img" aria-label="ความคืบหน้า ' + pct + ' เปอร์เซ็นต์">' + ringSvg(pct) + '<div class="pct">' + pct + '%</div></div></header>';
+  }
+
+  function renderTrain() {
+    var date = ui.date, key = dayKey(date), plan = state.plan[key], st = dayStats(date), today = iso(new Date());
+    var week = weekDates(date), full = 0, sets = 0;
+    var strip = week.map(function (d, i) {
+      var s = dayStats(d), k = DAYS[i], cls = "day";
+      if (d === date) cls += " sel";
+      if (d === today) cls += " today";
+      if (s.tot && s.pct === 100) { cls += " full"; full++; } else if (s.done) cls += " part";
+      sets += s.done;
+      return '<button type="button" class="' + cls + '" style="--p:' + s.pct + '%" data-a="day" data-d="' + d + '" aria-pressed="' + (d === date) + '"><small>' + DAY_SHORT[k] + '</small><b>' + parse(d).getDate() + '</b><i></i></button>';
+    }).join("");
+    var trainDays = week.filter(function (d) { return state.plan[dayKey(d)].ex.length; }).length;
+
+    var h = header(st.pct, fmtDate(week[0]) + " – " + fmtDate(week[6]));
+    h += '<div class="weekbar"><button type="button" class="nav" data-a="wk" data-n="-7" aria-label="สัปดาห์ก่อน">‹</button><div class="days">' + strip + '</div><button type="button" class="nav" data-a="wk" data-n="7" aria-label="สัปดาห์ถัดไป">›</button></div>';
+    h += '<div class="weeksum"><span>สัปดาห์นี้ครบ <b>' + full + '/' + trainDays + '</b> วัน</span><span>ทำแล้ว <b>' + sets + '</b> เซ็ต</span></div>';
+
+    h += '<div class="dayhead"><div><h2>' + DAY_TH[key] + ' · ' + esc(plan.title) + '</h2><p>' + esc(plan.sub) + '</p></div><div class="tools">' +
+      '<button type="button" class="btn' + (ui.edit ? " on" : "") + '" data-a="edit">' + (ui.edit ? "เสร็จสิ้น" : "แก้ไขแผน") + '</button></div></div>';
+
+    if (ui.edit) h += '<div class="warm"><b>แก้ครั้งเดียว ใช้ทุกสัปดาห์</b> การแก้เซ็ต จำนวนครั้ง และท่าของวัน' + DAY_TH[key] + ' จะเปลี่ยนให้ทุกวัน' + DAY_TH[key] + ' ทั้งอดีตและอนาคตโดยอัตโนมัติ</div>';
+    if (st.tot && st.pct === 100) h += '<div class="banner"><span class="k">完</span><p><b>ครบทุกเซ็ตแล้ว</b><br>บันทึกความรู้สึกด้านล่าง แล้วพักให้เต็มที่</p></div>';
+
+    if (!plan.ex.length && !ui.edit) {
+      h += '<div class="card rest"><p class="k">休</p><p>วันนี้เป็นวันพัก กินให้พอ นอนให้เต็มที่ และดื่มน้ำ</p></div>';
+    } else {
+      if (plan.ex.length) h += '<div class="warm"><b>วอร์มอัป 5–8 นาที</b> เดินอยู่กับที่ หมุนไหล่และข้อมือ ทำ squat และ push-up เบา ๆ</div>';
+      h += '<div class="list">' + plan.ex.map(function (e, idx) { return exCard(date, e, idx); }).join("") + '</div>';
+    }
+    if (ui.edit) {
+      h += '<div class="tools"><button type="button" class="btn" data-a="add">+ เพิ่มท่า</button>';
+      h += ui.confirmReset
+        ? '<button type="button" class="btn danger" data-a="reset-yes">ยืนยัน: คืนค่าแผนจากไฟล์ (ประวัติยังอยู่)</button><button type="button" class="btn" data-a="reset-no">ยกเลิก</button>'
+        : '<button type="button" class="btn danger" data-a="reset">คืนค่าแผนเดิม</button>';
+      h += '</div>';
+    }
+    if (plan.ex.length) {
+      var lg = state.logs[date] || { feel: 0, note: "" };
+      h += '<div class="card"><h4>บันทึกวันนี้</h4><div class="feel" role="group" aria-label="ความยาก">' +
+        FEEL.map(function (f, i) { return '<button type="button" data-a="feel" data-v="' + (i + 1) + '" class="' + (lg.feel === i + 1 ? "on" : "") + '">' + f + '</button>'; }).join("") +
+        '</div><textarea id="daynote" data-a="note" placeholder="ความรู้สึก อาการเจ็บ น้ำหนักที่ใช้ ฯลฯ">' + esc(lg.note) + '</textarea></div>';
+    }
+    h += '<p class="sync" id="sync"></p>';
+    return h;
+  }
+
+  function exCard(date, e, idx) {
+    var d = exDone(date, e), cls = "ex" + (d >= e.sets && e.sets ? " done" : "");
+    if (ui.edit) {
+      return '<div class="' + cls + '"><div class="edit">' +
+        '<label class="wide">ชื่อท่า<input id="n-' + e.id + '" data-a="f" data-f="name" data-id="' + e.id + '" value="' + esc(e.name) + '"></label>' +
+        '<label>จำนวนเซ็ต<span class="stepper"><button type="button" data-a="sets" data-id="' + e.id + '" data-n="-1" aria-label="ลดเซ็ต">−</button><input id="s-' + e.id + '" inputmode="numeric" data-a="f" data-f="sets" data-id="' + e.id + '" value="' + e.sets + '"><button type="button" data-a="sets" data-id="' + e.id + '" data-n="1" aria-label="เพิ่มเซ็ต">+</button></span></label>' +
+        '<label>จำนวนครั้ง/เวลา<input id="r-' + e.id + '" data-a="f" data-f="reps" data-id="' + e.id + '" value="' + esc(e.reps) + '"></label>' +
+        '<label>พัก<input id="t-' + e.id + '" data-a="f" data-f="rest" data-id="' + e.id + '" value="' + esc(e.rest) + '"></label>' +
+        '<label>หมายเหตุ<input id="m-' + e.id + '" data-a="f" data-f="note" data-id="' + e.id + '" value="' + esc(e.note) + '"></label>' +
+        '</div><div class="tools"><button type="button" class="btn" data-a="mv" data-id="' + e.id + '" data-n="-1"' + (idx === 0 ? " disabled" : "") + '>↑ ขึ้น</button><button type="button" class="btn" data-a="mv" data-id="' + e.id + '" data-n="1">↓ ลง</button><button type="button" class="btn danger" data-a="del" data-id="' + e.id + '">ลบท่า</button></div></div>';
+    }
+    var ph = (String(e.reps).match(/\d+/) || [""])[0], chips = "";
+    for (var i = 0; i < e.sets; i++) {
+      var s = getSet(date, e.id, i);
+      var last = lastReps(date, e.id, i);
+      chips += '<div class="set' + (s.d ? " on" : "") + '"><button type="button" class="chk" data-a="tog" data-id="' + e.id + '" data-i="' + i + '" aria-pressed="' + s.d + '" aria-label="เซ็ต ' + (i + 1) + '">✓</button>' +
+        '<input class="rep" id="x-' + e.id + '-' + i + '" inputmode="numeric" data-a="rep" data-id="' + e.id + '" data-i="' + i + '" value="' + esc(s.r) + '" placeholder="' + (last || ph) + '" title="' + (last ? "ครั้งก่อนทำได้ " + last : "") + '" aria-label="ทำได้กี่ครั้ง เซ็ต ' + (i + 1) + '"></div>';
+    }
+    return '<div class="' + cls + '"><div class="ex-top"><div><h3>' + esc(e.name) + '</h3>' + (e.note ? '<p class="note">' + esc(e.note) + '</p>' : "") + '</div>' +
+      '<div class="target">' + e.sets + ' × ' + esc(e.reps) + '<small>พัก ' + esc(e.rest) + '</small></div></div>' +
+      '<div class="sets">' + chips + '</div>' +
+      '<div class="exfoot"><span>' + d + '/' + e.sets + ' เซ็ต</span><div class="bar"><span style="width:' + (e.sets ? d / e.sets * 100 : 0) + '%"></span></div></div></div>';
+  }
+
+  function renderHistory() {
+    var dates = Object.keys(state.logs).filter(function (d) { return dayStats(d).done > 0 || state.logs[d].note || state.logs[d].feel; }).sort().reverse();
+    var all = Object.keys(state.logs).reduce(function (n, d) { return n + dayStats(d).done; }, 0);
+    var h = header(0, "ประวัติการฝึกทั้งหมด").replace(/<div class="ring"[\s\S]*<\/div><\/div>(?=<\/header>)/, '<div class="ring"><div class="pct" style="font-size:22px">' + all + '</div></div>');
+    h += '<p class="sync" style="text-align:left">เซ็ตที่ทำรวมทั้งหมด ' + all + ' เซ็ต · แตะวันที่เพื่อดูและแก้ไข</p>';
+    if (!dates.length) return h + '<div class="empty">ยังไม่มีบันทึก ไปที่แท็บ “ฝึก” แล้วติ๊กเซ็ตแรกได้เลย</div>';
+    h += '<div class="hist">' + dates.map(function (d) {
+      var s = dayStats(d), k = dayKey(d), lg = state.logs[d];
+      return '<button type="button" class="hrow" data-a="goto" data-d="' + d + '"><span class="d">' + DAY_SHORT[k] + ' ' + fmtDate(d) + '</span><span class="t"><b>' + esc(state.plan[k].title) + '</b>' + s.done + '/' + s.tot + ' เซ็ต' + (lg.feel ? ' · ' + FEEL[lg.feel - 1] : "") + '</span><span class="p">' + s.pct + '%</span></button>';
+    }).join("") + '</div>';
+    return h;
+  }
+
+  function renderGuide() {
+    var h = header(0, "หลักการจากแผน Hybrid Calisthenics + Dumbbell").replace(/<div class="ring"[\s\S]*<\/div><\/div>(?=<\/header>)/, "");
+    h += '<div class="card"><h4>อุปกรณ์และรูปแบบสัปดาห์</h4><p class="note">บาร์ดึงข้อ และดัมเบล 7.5 กก. 2 อัน<br>จันทร์ Pull · อังคาร Push · พุธ Legs/Core · พฤหัส Skills · ศุกร์ Full Body · เสาร์–อาทิตย์พัก</p></div>';
+    h += '<div class="card guide"><h4>วิธีเพิ่มความยากอย่างปลอดภัย</h4><ul>' + [
+      "ทำแต่ละเซ็ตด้วยฟอร์มที่ถูกต้อง และเหลือแรงประมาณ 1–3 ครั้งในเซ็ตส่วนใหญ่",
+      "เมื่อทำจำนวนครั้งสูงสุดได้ครบทุกเซ็ตอย่างถูกต้องในการฝึก 2 ครั้ง ค่อยเพิ่มความยากทีละน้อย",
+      "เพิ่มจำนวนครั้งก่อน จากนั้นค่อยเพิ่มน้ำหนักเมื่อมีอุปกรณ์ที่เหมาะสม หรือเลือกท่าที่ยากขึ้นอย่างปลอดภัย",
+      "ลดตัวลงอย่างควบคุมประมาณ 2–3 วินาที ไม่กระตุก ไม่กลั้นหายใจ และไม่ฝืนผ่านอาการเจ็บ",
+      "ถ้าล้าสะสม ให้ลดเซ็ตหรือพักเพิ่ม ไม่จำเป็นต้องฝึกหนักครบ 5 วันทุกสัปดาห์"
+    ].map(function (t) { return "<li>" + t + "</li>"; }).join("") + '</ul></div>';
+    h += '<div class="card guide"><h4>การพักฟื้นและโภชนาการ</h4><ul>' + [
+      "กินอาหารให้เพียงพอและหลากหลาย มีโปรตีนจากไข่ นม ปลา เนื้อสัตว์ เต้าหู้ หรือถั่ว",
+      "ดื่มน้ำให้เพียงพอ และนอนให้เหมาะสม วัยรุ่นควรนอนประมาณ 8–10 ชั่วโมง",
+      "หยุดท่าที่ทำให้เจ็บแปลบ เวียนหัว หรือปวดข้อ และปรับท่าให้เหมาะกับความสามารถ",
+      "ดัมเบล 7.5 กก. อาจเหมาะกับบางท่า แต่หนักหรือเบาเกินไปสำหรับบางท่าได้ เลือกน้ำหนักที่ควบคุมได้เสมอ"
+    ].map(function (t) { return "<li>" + t + "</li>"; }).join("") + '</ul></div>';
+    h += '<p class="sync" style="text-align:left">โปรแกรมนี้เป็นจุดเริ่มต้น ปรับปริมาณตามการฟื้นตัวและคุณภาพท่า ไม่ต้องฝึกจนหมดแรงทุกครั้ง</p>';
+    return h;
+  }
+
+  function render() {
+    var scroll = window.scrollY;
+    app.innerHTML = ui.tab === "train" ? renderTrain() : ui.tab === "history" ? renderHistory() : renderGuide();
+    document.querySelectorAll("#tabs button").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === ui.tab); });
+    window.scrollTo(0, scroll);
+    flashSync();
+  }
+  var syncText = "";
+  function flashSync() { var el = document.getElementById("sync"); if (el) el.textContent = syncText; }
+
+  /* ---------- timer ---------- */
+  var tEl = document.getElementById("timer"), tVal = document.getElementById("tval");
+  function startTimer(sec) {
+    timer.end = Date.now() + sec * 1000; tEl.hidden = false; tick();
+    clearInterval(timer.id); timer.id = setInterval(tick, 250);
+  }
+  function tick() {
+    var left = Math.ceil((timer.end - Date.now()) / 1000);
+    if (left <= 0) { stopTimer(); return; }
+    tVal.textContent = Math.floor(left / 60) + ":" + (left % 60 < 10 ? "0" : "") + (left % 60);
+  }
+  function stopTimer() { clearInterval(timer.id); tEl.hidden = true; }
+  document.getElementById("tskip").addEventListener("click", stopTimer);
+
+  /* ---------- events ---------- */
+  function findEx(id) { var p = state.plan[dayKey(ui.date)]; for (var i = 0; i < p.ex.length; i++) if (p.ex[i].id === id) return { p: p, i: i, e: p.ex[i] }; return null; }
+
+  document.getElementById("tabs").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    ui.tab = b.dataset.tab; render(); window.scrollTo(0, 0);
+  });
+
+  app.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-a]"); if (!b || b.tagName === "INPUT" || b.tagName === "TEXTAREA") return;
+    var a = b.dataset.a, id = b.dataset.id, f;
+    if (a === "day") { ui.date = b.dataset.d; ui.confirmReset = false; }
+    else if (a === "goto") { ui.date = b.dataset.d; ui.tab = "train"; window.scrollTo(0, 0); }
+    else if (a === "wk") { ui.date = addDays(ui.date, +b.dataset.n); }
+    else if (a === "edit") { ui.edit = !ui.edit; ui.confirmReset = false; }
+    else if (a === "tog") {
+      var i = +b.dataset.i, e = findEx(id).e, s = getSet(ui.date, id, i);
+      setSet(ui.date, id, i, { d: !s.d });
+      if (!s.d) startTimer(restSeconds(e.rest)); else stopTimer();
+      save();
+    }
+    else if (a === "feel") { var l = dayLog(ui.date); l.feel = l.feel === +b.dataset.v ? 0 : +b.dataset.v; save(); }
+    else if (a === "sets") { f = findEx(id); f.e.sets = Math.max(1, Math.min(12, f.e.sets + +b.dataset.n)); save(); }
+    else if (a === "add") { state.plan[dayKey(ui.date)].ex.push(ex("ท่าใหม่", 3, "10", "90 วินาที", "")); save(); }
+    else if (a === "del") { f = findEx(id); f.p.ex.splice(f.i, 1); save(); }
+    else if (a === "mv") {
+      f = findEx(id); var j = f.i + +b.dataset.n;
+      if (j >= 0 && j < f.p.ex.length) { var t = f.p.ex[f.i]; f.p.ex[f.i] = f.p.ex[j]; f.p.ex[j] = t; save(); }
+    }
+    else if (a === "reset") { ui.confirmReset = true; }
+    else if (a === "reset-no") { ui.confirmReset = false; }
+    else if (a === "reset-yes") { state.plan = defaultPlan(); ui.confirmReset = false; save(); }
+    render();
+  });
+
+  app.addEventListener("change", function (ev) {
+    var t = ev.target, a = t.dataset.a, f;
+    if (a === "rep") {
+      setSet(ui.date, t.dataset.id, +t.dataset.i, { r: t.value.replace(/[^\d.]/g, "") }); save(); render();
+    } else if (a === "note") {
+      dayLog(ui.date).note = t.value; save();
+    } else if (a === "f") {
+      f = findEx(t.dataset.id); if (!f) return;
+      var k = t.dataset.f;
+      if (k === "sets") { var n = parseInt(t.value, 10); f.e.sets = isNaN(n) ? f.e.sets : Math.max(1, Math.min(12, n)); }
+      else f.e[k] = t.value.trim();
+      save(); render();
+    }
+  });
+
+  /* ---------- sync ---------- */
+  render();
+  (async function () {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      var db = await window.claude.use("db"), user = await window.claude.use("user");
+      if (!db || !user) { syncText = "บันทึกในเบราว์เซอร์นี้"; flashSync(); return; }
+      var uid = await user.id(); if (!uid) return;
+      dbDoc = db.collection("data/users/" + uid).doc("state");
+      var snap = await dbDoc.get();
+      if (snap.exists) {
+        var rd = snap.data();
+        if (rd && rd.data && rd.updatedAt > (state.updatedAt || 0)) {
+          var parsed = JSON.parse(rd.data);
+          if (parsed && parsed.plan && parsed.logs) { state = parsed; }
+        } else if (rd && state.updatedAt > rd.updatedAt) { save(); }
+      } else if (state.updatedAt) { save(); }
+      syncText = "ซิงค์กับบัญชีของคุณแล้ว"; render();
+    } catch (e) { syncText = "บันทึกในเบราว์เซอร์นี้"; flashSync(); }
+  })();
+})();
+</script>
+
+</body></html>
